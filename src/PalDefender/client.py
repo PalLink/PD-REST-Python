@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit, urlunsplit
 
 import requests
 
@@ -31,7 +31,7 @@ class RESTClient:
         if not bearer_token:
             raise ValueError("bearer_token must not be empty")
 
-        self.base_url = base_url.rstrip("/")
+        self.base_url = self._normalize_base_url(base_url)
         self.timeout = timeout
         self.session = session or requests.Session()
         self.session.headers.setdefault("Authorization", f"Bearer {bearer_token}")
@@ -160,6 +160,30 @@ class RESTClient:
     @staticmethod
     def _path_part(value: str) -> str:
         return quote(value, safe="")
+
+    @staticmethod
+    def _normalize_base_url(base_url: str) -> str:
+        normalized = base_url.rstrip("/")
+        parts = urlsplit(normalized)
+        if not parts.scheme or not parts.netloc:
+            return normalized
+        if parts.port is not None:
+            return normalized
+
+        hostname = parts.hostname
+        if hostname is None:
+            return normalized
+
+        netloc = hostname
+        if ":" in hostname and not hostname.startswith("["):
+            netloc = f"[{hostname}]"
+        if parts.username is not None:
+            credentials = parts.username
+            if parts.password is not None:
+                credentials = f"{credentials}:{parts.password}"
+            netloc = f"{credentials}@{netloc}"
+
+        return urlunsplit((parts.scheme, f"{netloc}:17993", parts.path, parts.query, parts.fragment))
 
     def _request(self, method: str, path: str, *, json: Any = None) -> JsonValue:
         response = self.session.request(

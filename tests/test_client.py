@@ -23,10 +23,28 @@ class PalDefenderClientTests(unittest.TestCase):
         response.json.return_value = {"version_str": "1.0.0"}
         session.request.return_value = response
 
-        client = RESTClient("http://localhost:8212", "secret", session=session)
+        client = RESTClient("http://localhost", "secret", session=session)
         data = client.version()
 
         self.assertEqual(data["version_str"], "1.0.0")
+        session.request.assert_called_once_with(
+            method="GET",
+            url="http://localhost:17993/v1/pdapi/version",
+            json=None,
+            timeout=30.0,
+        )
+
+    def test_explicit_port_is_preserved(self) -> None:
+        session = Mock()
+        response = Mock()
+        response.status_code = 200
+        response.text = '{"version_str":"1.0.0"}'
+        response.json.return_value = {"version_str": "1.0.0"}
+        session.request.return_value = response
+
+        client = RESTClient("http://localhost:8212", "secret", session=session)
+        client.version()
+
         session.request.assert_called_once_with(
             method="GET",
             url="http://localhost:8212/v1/pdapi/version",

@@ -2,6 +2,8 @@
 
 Example project for `paldefender-rest-client` with `.env`-based configuration and support for every client endpoint.
 
+If `PALDEFENDER_BASE_URL` omits a port, the client defaults to `17993`.
+
 ## Setup
 
 From the repository root:

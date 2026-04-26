@@ -14,7 +14,7 @@ pip install .
 from PalDefender import GiveItem, RESTClient
 
 with RESTClient(
-    base_url="http://127.0.0.1:8212",
+    base_url="http://127.0.0.1",
     bearer_token="your-token",
 ) as client:
     version = client.version()
@@ -38,6 +38,8 @@ python examples/paldefender_cli/main.py version
 ```
 
 Copy `examples/paldefender_cli/.env.example` to `examples/paldefender_cli/.env`, then fill in your settings before running the example.
+
+If `base_url` omits a port, the client defaults to `17993`.
 
 ## Available Methods
 
