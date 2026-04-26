@@ -28,6 +28,11 @@ dependencies = [
   "requests>=2.31.0,<3"
 ]
 
+[project.optional-dependencies]
+examples = [
+  "python-dotenv>=1.0.1,<2"
+]
+
 [project.urls]
 Homepage = "https://github.com/"
 Documentation = "https://github.com/"
@@ -39,6 +44,7 @@ packages = ["src/PalDefender"]
 include = [
   "/src",
   "/tests",
+  "/examples",
   "/docs",
   "/README.md",
   "/LICENSE",

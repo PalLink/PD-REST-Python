@@ -28,6 +28,17 @@ Or:
 import PalDefender
 ```
 
+## Example Project
+
+A runnable example CLI is included in [examples/paldefender_cli](examples/paldefender_cli). It uses a local `.env` file for credentials and server settings, and covers every client endpoint.
+
+```bash
+pip install -e .[examples]
+python examples/paldefender_cli/main.py version
+```
+
+Copy `examples/paldefender_cli/.env.example` to `examples/paldefender_cli/.env`, then fill in your settings before running the example.
+
 ## Available Methods
 
 ### Read operations
