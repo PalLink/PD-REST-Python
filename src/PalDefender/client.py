@@ -47,6 +47,15 @@ class RESTClient:
         display_address: str | None = None,
         session: requests.Session | None = None,
     ) -> None:
+        """Create a synchronous client for the PalDefender REST API.
+
+        Args:
+            base_url: Server base URL such as ``http://127.0.0.1``.
+            bearer_token: Bearer token used for API authentication.
+            timeout: Request timeout in seconds.
+            display_address: Optional value for the ``DisplayAddress`` header.
+            session: Optional existing ``requests.Session`` to reuse.
+        """
         if not base_url:
             raise ValueError("base_url must not be empty")
         if not bearer_token:
@@ -61,76 +70,97 @@ class RESTClient:
             self.session.headers.setdefault("DisplayAddress", display_address)
 
     def close(self) -> None:
+        """Close the underlying HTTP session."""
         self.session.close()
 
     def __enter__(self) -> "RESTClient":
+        """Return the client for context-manager usage."""
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        """Close the client when leaving a context-manager block."""
         self.close()
 
     def get_version(self) -> VersionInfo:
+        """Fetch server version information."""
         return VersionInfo.from_dict(self._request_json("GET", "/v1/pdapi/version"))
 
     def get_guilds(self) -> GuildsResponse:
+        """Fetch the guild list keyed by guild id."""
         return GuildsResponse.from_dict(self._request_json("GET", "/v1/pdapi/guilds"))
 
     def get_guild(self, guild_id: str) -> GuildDetail:
+        """Fetch one guild by guild id."""
         return GuildDetail.from_dict(self._request_json("GET", f"/v1/pdapi/guild/{self._path_part(guild_id)}"))
 
     def get_players(self) -> PlayersResponse:
+        """Fetch all players known to the server."""
         return PlayersResponse.from_list(self._request_json("GET", "/v1/pdapi/items/players"))
 
     def get_player(self, player_identifier: str) -> PlayerInfo:
+        """Fetch one player by ``UserId`` or ``PlayerUID``."""
         return PlayerInfo.from_dict(
             self._request_json("GET", f"/v1/pdapi/items/player/{self._path_part(player_identifier)}")
         )
 
     def get_pals(self, player_identifier: str) -> PlayerPalsResponse:
+        """Fetch team, palbox, and base-camp pal data for one player."""
         return PlayerPalsResponse.from_dict(
             self._request_json("GET", f"/v1/pdapi/items/pals/{self._path_part(player_identifier)}")
         )
 
     def get_items(self, player_identifier: str) -> PlayerItemsResponse:
+        """Fetch inventory sections for one player."""
         return PlayerItemsResponse.from_dict(
             self._request_json("GET", f"/v1/pdapi/items/{self._path_part(player_identifier)}")
         )
 
     def get_techs(self, player_identifier: str) -> PlayerTechsResponse:
+        """Fetch unlocked technology data for one player."""
         return PlayerTechsResponse.from_dict(
             self._request_json("GET", f"/v1/pdapi/techs/{self._path_part(player_identifier)}")
         )
 
     def get_progression(self, player_identifier: str) -> PlayerProgressionResponse:
+        """Fetch progression, currencies, boss, capture, and activity data for one player."""
         return PlayerProgressionResponse.from_dict(
             self._request_json("GET", f"/v1/pdapi/progression/{self._path_part(player_identifier)}")
         )
 
     def version(self) -> VersionInfo:
+        """Alias for :meth:`get_version`."""
         return self.get_version()
 
     def guilds(self) -> GuildsResponse:
+        """Alias for :meth:`get_guilds`."""
         return self.get_guilds()
 
     def guild(self, guild_id: str) -> GuildDetail:
+        """Alias for :meth:`get_guild`."""
         return self.get_guild(guild_id)
 
     def players(self) -> PlayersResponse:
+        """Alias for :meth:`get_players`."""
         return self.get_players()
 
     def player(self, player_identifier: str) -> PlayerInfo:
+        """Alias for :meth:`get_player`."""
         return self.get_player(player_identifier)
 
     def pals(self, player_identifier: str) -> PlayerPalsResponse:
+        """Alias for :meth:`get_pals`."""
         return self.get_pals(player_identifier)
 
     def items(self, player_identifier: str) -> PlayerItemsResponse:
+        """Alias for :meth:`get_items`."""
         return self.get_items(player_identifier)
 
     def techs(self, player_identifier: str) -> PlayerTechsResponse:
+        """Alias for :meth:`get_techs`."""
         return self.get_techs(player_identifier)
 
     def progression(self, player_identifier: str) -> PlayerProgressionResponse:
+        """Alias for :meth:`get_progression`."""
         return self.get_progression(player_identifier)
 
     def give_items(
@@ -138,6 +168,13 @@ class RESTClient:
         player_identifier: str,
         *items: ItemInput,
     ) -> JsonValue:
+        """Grant items to a player using friendly shorthand inputs.
+
+        Supported item inputs include strings, ``(item_id, count)`` tuples,
+        :class:`GiveItem` objects, dictionaries, or a single sequence
+        containing those values. Duplicate item ids are merged before the
+        request is sent.
+        """
         normalized_items = self._normalize_item_inputs(items)
         payload = {"Items": [self._serialize_entry(item) for item in normalized_items]}
         return self._request("POST", f"/v1/pdapi/give/items/{self._path_part(player_identifier)}", json=payload)
@@ -147,6 +184,13 @@ class RESTClient:
         player_identifier: str,
         *pals: PalInput,
     ) -> JsonValue:
+        """Grant pals to a player using friendly shorthand inputs.
+
+        Supported pal inputs include strings, :class:`PalId`, ``(pal_id, level)``
+        tuples, :class:`GivePal` objects, dictionaries, or a single sequence
+        containing those values. Plain string and ``PalId`` values default to
+        level ``1``.
+        """
         normalized_pals = self._normalize_pal_inputs(pals)
         payload = {"Pals": [self._serialize_entry(pal) for pal in normalized_pals]}
         return self._request("POST", f"/v1/pdapi/give/pals/{self._path_part(player_identifier)}", json=payload)
@@ -156,6 +200,7 @@ class RESTClient:
         player_identifier: str,
         *templates: str | Sequence[str],
     ) -> JsonValue:
+        """Grant one or more pal templates to a player."""
         normalized_templates = self._normalize_string_inputs(templates, label="templates")
         return self._request(
             "POST",
@@ -168,6 +213,12 @@ class RESTClient:
         player_identifier: str,
         *pal_eggs: PalEggInput,
     ) -> JsonValue:
+        """Grant pal eggs to a player using friendly shorthand inputs.
+
+        Supported inputs include :class:`GivePalEgg`, dictionaries, tuples of
+        ``(egg_id, pal_id_or_template)``, and tuples of
+        ``(egg_id, pal_id_or_template, level)``.
+        """
         normalized_pal_eggs = self._normalize_pal_egg_inputs(pal_eggs)
         payload = {"PalEggs": [self._serialize_entry(pal_egg) for pal_egg in normalized_pal_eggs]}
         return self._request("POST", f"/v1/pdapi/give/paleggs/{self._path_part(player_identifier)}", json=payload)
@@ -179,6 +230,11 @@ class RESTClient:
         *,
         quantity: int = 1,
     ) -> JsonValue:
+        """Grant the recipe materials required to craft a product.
+
+        The recipe is resolved locally from the exported PalDefender recipe
+        data and then sent through :meth:`give_items`.
+        """
         if quantity <= 0:
             raise ValueError("quantity must be a positive integer")
 
@@ -207,6 +263,11 @@ class RESTClient:
         technology_points: int | None = None,
         ancient_technology_points: int | None = None,
     ) -> JsonValue:
+        """Grant progression values to a player.
+
+        Pass either a :class:`GiveProgressionRequest` or progression keyword
+        arguments, but not both in the same call.
+        """
         payload = self._normalize_progression_request(
             request=request,
             exp=exp,
@@ -225,6 +286,11 @@ class RESTClient:
         player_identifier: str,
         *technology: TechnologyInput,
     ) -> JsonValue:
+        """Unlock one or more technologies for a player.
+
+        Technology values may be strings, :class:`TechnologyId`, multiple
+        varargs, or a single sequence of those values.
+        """
         return self._request(
             "POST",
             f"/v1/pdapi/learntech/{self._path_part(player_identifier)}",
@@ -236,6 +302,12 @@ class RESTClient:
         player_identifier: str,
         *technology: TechnologyInput,
     ) -> JsonValue:
+        """Forget one or more technologies for a player.
+
+        Technology values may be strings, :class:`TechnologyId`, multiple
+        varargs, or a single sequence of those values. The special value
+        ``"All"`` is only valid when passed by itself.
+        """
         return self._request(
             "POST",
             f"/v1/pdapi/forgettech/{self._path_part(player_identifier)}",
@@ -243,16 +315,19 @@ class RESTClient:
         )
 
     def delete_base(self, base_camp_identifier: str) -> JsonValue:
+        """Delete a base camp by GUID."""
         return self._request("POST", f"/v1/pdapi/deletebase/{self._path_part(base_camp_identifier)}")
 
     @staticmethod
     def _serialize_entry(value: Any) -> Any:
+        """Convert helper model instances into request-ready dictionaries."""
         if hasattr(value, "to_dict"):
             return value.to_dict()
         return value
 
     @classmethod
     def _normalize_item_inputs(cls, values: Sequence[ItemInput]) -> list[GiveItem | dict[str, Any]]:
+        """Normalize item shorthand inputs into request payload entries."""
         values = cls._flatten_single_sequence(values, cls._looks_like_item_tuple)
 
         counts: dict[str, int] = {}
@@ -301,6 +376,7 @@ class RESTClient:
 
     @classmethod
     def _normalize_pal_inputs(cls, values: Sequence[PalInput]) -> list[GivePal | dict[str, Any]]:
+        """Normalize pal shorthand inputs into request payload entries."""
         values = cls._flatten_single_sequence(values, cls._looks_like_pal_tuple)
 
         normalized: list[GivePal | dict[str, Any]] = []
@@ -343,6 +419,7 @@ class RESTClient:
 
     @classmethod
     def _normalize_pal_egg_inputs(cls, values: Sequence[PalEggInput]) -> list[GivePalEgg | dict[str, Any]]:
+        """Normalize pal egg shorthand inputs into request payload entries."""
         values = cls._flatten_single_sequence(values, cls._looks_like_pal_egg_tuple)
 
         normalized: list[GivePalEgg | dict[str, Any]] = []
@@ -390,6 +467,7 @@ class RESTClient:
 
     @staticmethod
     def _normalize_string_inputs(values: Sequence[str | Sequence[str]], *, label: str) -> list[str]:
+        """Normalize either varargs or a single sequence of strings."""
         if len(values) == 1 and isinstance(values[0], Sequence) and not isinstance(values[0], (str, bytes, bytearray)):
             values = list(values[0])
         normalized: list[str] = []
@@ -410,6 +488,7 @@ class RESTClient:
         technology_points: int | None,
         ancient_technology_points: int | None,
     ) -> GiveProgressionRequest | dict[str, Any]:
+        """Build a progression request from either a model or keyword values."""
         has_keyword_values = any(
             value is not None
             for value in (exp, lifmunks, technology_points, ancient_technology_points)
@@ -427,14 +506,17 @@ class RESTClient:
 
     @staticmethod
     def _looks_like_item_tuple(value: Sequence[Any]) -> bool:
+        """Return whether a value matches the ``(item_id, count)`` shorthand."""
         return len(value) == 2 and isinstance(value[0], str) and isinstance(value[1], int)
 
     @staticmethod
     def _looks_like_pal_tuple(value: Sequence[Any]) -> bool:
+        """Return whether a value matches the ``(pal_id, level)`` shorthand."""
         return len(value) == 2 and isinstance(value[0], (str, PalId)) and isinstance(value[1], int)
 
     @staticmethod
     def _looks_like_pal_egg_tuple(value: Sequence[Any]) -> bool:
+        """Return whether a value matches a pal egg shorthand tuple."""
         return (
             len(value) in {2, 3}
             and isinstance(value[0], str)
@@ -444,10 +526,12 @@ class RESTClient:
 
     @staticmethod
     def _is_known_pal_id(value: str) -> bool:
+        """Return whether a string matches a known ``PalId`` value."""
         return value in PalId._value2member_map_
 
     @staticmethod
     def _flatten_single_sequence(values: Sequence[Any], tuple_predicate: Any) -> Sequence[Any]:
+        """Treat one nested sequence as varargs unless it is one shorthand tuple."""
         if len(values) == 1 and isinstance(values[0], Sequence) and not isinstance(values[0], (str, bytes, bytearray)):
             nested_values = values[0]
             if not tuple_predicate(nested_values):
@@ -456,6 +540,7 @@ class RESTClient:
 
     @staticmethod
     def _technology_payload(*technology: TechnologyInput) -> str | list[str]:
+        """Normalize technology inputs into the server request shape."""
         flattened = RESTClient._flatten_single_sequence(technology, lambda value: False)
         if not flattened:
             raise ValueError("at least one technology must be provided")
@@ -478,10 +563,12 @@ class RESTClient:
 
     @staticmethod
     def _path_part(value: str) -> str:
+        """URL-encode a path segment."""
         return quote(value, safe="")
 
     @staticmethod
     def _normalize_base_url(base_url: str) -> str:
+        """Append the default REST API port when the URL omits one."""
         normalized = base_url.rstrip("/")
         parts = urlsplit(normalized)
         if not parts.scheme or not parts.netloc:
@@ -505,6 +592,7 @@ class RESTClient:
         return urlunsplit((parts.scheme, f"{netloc}:17993", parts.path, parts.query, parts.fragment))
 
     def _request(self, method: str, path: str, *, json: Any = None) -> JsonValue:
+        """Send one HTTP request and raise ``PalDefenderApiError`` on failure."""
         response = self.session.request(
             method=method,
             url=f"{self.base_url}{path}",
@@ -524,6 +612,7 @@ class RESTClient:
         return data
 
     def _request_json(self, method: str, path: str, *, json: Any = None) -> dict[str, Any] | list[Any]:
+        """Send one HTTP request and require a JSON object or array response."""
         data = self._request(method, path, json=json)
         if not isinstance(data, (dict, list)):
             raise TypeError(f"Expected a JSON object or array from {method} {path}, got {type(data).__name__}")
@@ -531,6 +620,7 @@ class RESTClient:
 
     @staticmethod
     def _decode_response(response: requests.Response) -> JsonValue:
+        """Decode a response body as JSON when possible, otherwise return text."""
         if not response.text:
             return None
 
@@ -541,6 +631,7 @@ class RESTClient:
 
     @staticmethod
     def _error_message(status_code: int, data: JsonValue) -> str:
+        """Build a readable exception message from an error response body."""
         if isinstance(data, dict):
             if "Error" in data:
                 return f"PalDefender API returned {status_code}: {data['Error']}"
