@@ -88,7 +88,7 @@ Guild member entries contain:
 - `player_name`
 - `status`
 
-### `GET /v1/pdapi/items/players`
+### `GET /v1/pdapi/players`
 
 Returns an array of players. Each player entry contains:
 
@@ -101,7 +101,7 @@ Returns an array of players. Each player entry contains:
 - `WorldLocation`
 - `MapLocation`
 
-### `GET /v1/pdapi/items/player/{player_identifier}`
+### `GET /v1/pdapi/player/{player_identifier}`
 
 Returns one player object. If the player is missing, the server returns:
 
@@ -110,7 +110,7 @@ Returns one player object. If the player is missing, the server returns:
 
 `player_identifier` may be either the PalDefender `UserId` or `PlayerUID`.
 
-### `GET /v1/pdapi/items/pals/{player_identifier}`
+### `GET /v1/pdapi/pals/{player_identifier}`
 
 Returns:
 

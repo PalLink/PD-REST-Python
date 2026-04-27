@@ -157,7 +157,7 @@ class PalDefenderClientTests(unittest.TestCase):
         self.assertEqual(data.players[0].player_uid, "p1")
         session.request.assert_called_once_with(
             method="GET",
-            url="http://localhost:8212/v1/pdapi/items/players",
+            url="http://localhost:8212/v1/pdapi/players",
             json=None,
             timeout=30.0,
         )
@@ -185,7 +185,7 @@ class PalDefenderClientTests(unittest.TestCase):
         self.assertEqual(data.user_id, "u1")
         session.request.assert_called_once_with(
             method="GET",
-            url="http://localhost:8212/v1/pdapi/items/player/player-1",
+            url="http://localhost:8212/v1/pdapi/player/player-1",
             json=None,
             timeout=30.0,
         )
@@ -208,7 +208,7 @@ class PalDefenderClientTests(unittest.TestCase):
         self.assertEqual(data.team["pal-1"].attributes["PalID"], "Lamball")
         session.request.assert_called_once_with(
             method="GET",
-            url="http://localhost:8212/v1/pdapi/items/pals/player-1",
+            url="http://localhost:8212/v1/pdapi/pals/player-1",
             json=None,
             timeout=30.0,
         )

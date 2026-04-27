@@ -95,18 +95,18 @@ class RESTClient:
 
     def get_players(self) -> PlayersResponse:
         """Fetch all players known to the server."""
-        return PlayersResponse.from_list(self._request_json("GET", "/v1/pdapi/items/players"))
+        return PlayersResponse.from_list(self._request_json("GET", "/v1/pdapi/players"))
 
     def get_player(self, player_identifier: str) -> PlayerInfo:
         """Fetch one player by ``UserId`` or ``PlayerUID``."""
         return PlayerInfo.from_dict(
-            self._request_json("GET", f"/v1/pdapi/items/player/{self._path_part(player_identifier)}")
+            self._request_json("GET", f"/v1/pdapi/player/{self._path_part(player_identifier)}")
         )
 
     def get_pals(self, player_identifier: str) -> PlayerPalsResponse:
         """Fetch team, palbox, and base-camp pal data for one player."""
         return PlayerPalsResponse.from_dict(
-            self._request_json("GET", f"/v1/pdapi/items/pals/{self._path_part(player_identifier)}")
+            self._request_json("GET", f"/v1/pdapi/pals/{self._path_part(player_identifier)}")
         )
 
     def get_items(self, player_identifier: str) -> PlayerItemsResponse:
