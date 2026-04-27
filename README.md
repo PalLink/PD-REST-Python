@@ -11,15 +11,15 @@ pip install .
 ## Quick Start
 
 ```python
-from PalDefender import GiveItem, RESTClient
+from PalDefender import RESTClient
 
 with RESTClient(
     base_url="http://127.0.0.1",
     bearer_token="your-token",
 ) as client:
-    version = client.version()
-    players = client.players()
-    result = client.give_items("player-uid-or-userid", [GiveItem("Stone", 100)])
+    version = client.get_version()
+    players = client.get_players()
+    result = client.give_items("player-uid-or-userid", "Stone", ("Stone", 99))
 ```
 
 Or:
@@ -45,25 +45,27 @@ If `base_url` omits a port, the client defaults to `17993`.
 
 ### Read operations
 
-- `version()`
-- `guilds()`
-- `guild(guild_id)`
-- `players()`
-- `player(player_identifier)`
-- `pals(player_identifier)`
-- `items(player_identifier)`
-- `techs(player_identifier)`
-- `progression(player_identifier)`
+- `get_version()`
+- `get_guilds()`
+- `get_guild(guild_id)`
+- `get_players()`
+- `get_player(player_identifier)`
+- `get_pals(player_identifier)`
+- `get_items(player_identifier)`
+- `get_techs(player_identifier)`
+- `get_progression(player_identifier)`
 
 ### Write operations
 
-- `give_items(player_identifier, items)`
+- `give_items(player_identifier, *items)`
+- `give_recipe_materials(player_identifier, product, quantity=1)`
 - `give_pals(player_identifier, pals)`
 - `give_pal_templates(player_identifier, templates)`
 - `give_pal_eggs(player_identifier, pal_eggs)`
 - `give_progression(player_identifier, request)`
 - `learn_tech(player_identifier, technology)`
 - `forget_tech(player_identifier, technology)`
+- `delete_base(base_camp_identifier)`
 
 ## Helper Models
 
@@ -73,6 +75,18 @@ The package includes request helper dataclasses:
 - `GivePal`
 - `GivePalEgg`
 - `GiveProgressionRequest`
+
+## Constants And Recipes
+
+Generated constants and recipe helpers are exported from the package root:
+
+- `ItemId`, `PalId`, `PassiveId`, `SkillId`, `TechnologyId`
+- `ITEM_ID_TO_NAME`, `PAL_ID_TO_NAME`, `PASSIVE_ID_TO_NAME`, `SKILL_ID_TO_NAME`, `TECHNOLOGY_ID_TO_NAME`
+- `Recipe`, `has_recipe()`, `get_recipe()`, `get_recipe_materials()`, `get_recipes()`
+
+`give_recipe_materials()` resolves a product recipe locally and then calls the existing `give_items()` endpoint with the required material counts.
+
+`give_items()` accepts strings, `(item_id, count)` tuples, `GiveItem` objects, or a single list/tuple containing those values. Duplicate item ids are merged before the request is sent.
 
 You can also pass plain dictionaries when that is more convenient.
 

@@ -43,8 +43,16 @@ python examples/paldefender_cli/main.py give-pals player-uid '[{"PalID":"Lamball
 python examples/paldefender_cli/main.py give-pal-templates player-uid starter_build shadowfox.json
 python examples/paldefender_cli/main.py give-pal-eggs player-uid '[{"EggID":"PalEgg_Dark","PalID":"Foxparks","Level":8}]'
 python examples/paldefender_cli/main.py give-progression player-uid '{"EXP":1000,"TechnologyPoints":5}'
-python examples/paldefender_cli/main.py learn-tech player-uid TechA TechB
+python examples/paldefender_cli/main.py learn-tech player-uid Workbench Shield_03
 python examples/paldefender_cli/main.py forget-tech player-uid All
+python examples/paldefender_cli/main.py delete-base 00000000-0000-0000-0000-000000000000
+```
+
+PowerShell note: use single quotes around inline JSON. Double-quoted JSON is often rewritten before Python receives it.
+
+```powershell
+python.exe .\examples\paldefender_cli\main.py give-items player-uid '[{"ItemID":"Stone","Count":100}]'
+python.exe .\examples\paldefender_cli\main.py give-progression player-uid '{"EXP":1000,"TechnologyPoints":5}'
 ```
 
 JSON from a file:

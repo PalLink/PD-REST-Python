@@ -16,6 +16,7 @@ from PalDefender import (
     GiveProgressionRequest,
     PalDefenderApiError,
     RESTClient,
+    model_to_dict,
 )
 
 
@@ -102,6 +103,9 @@ def build_parser() -> argparse.ArgumentParser:
             help='One or more technology ids, or a single "All".',
         )
 
+    delete_base_parser = subparsers.add_parser("delete-base", help="Destroy one base camp by GUID.")
+    delete_base_parser.add_argument("base_camp_identifier", help="Base camp GUID.")
+
     return parser
 
 
@@ -141,7 +145,11 @@ def load_json_argument(raw_value: str) -> Any:
     try:
         return json.loads(content)
     except json.JSONDecodeError as exc:
-        raise ValueError(f"Invalid JSON payload: {exc}") from exc
+        raise ValueError(
+            "Invalid JSON payload: "
+            f"{exc}. If you are using PowerShell, wrap inline JSON in single quotes "
+            "or use @path/to/file.json."
+        ) from exc
 
 
 def parse_items(payload: str) -> list[GiveItem | dict[str, Any]]:
@@ -210,7 +218,7 @@ def technology_argument(values: list[str]) -> str | list[str]:
 
 
 def print_json(data: Any) -> None:
-    print(json.dumps(data, indent=2, sort_keys=True))
+    print(json.dumps(model_to_dict(data), indent=2, sort_keys=True))
 
 
 def main() -> int:
@@ -229,23 +237,23 @@ def main() -> int:
     try:
         with RESTClient(**settings) as client:
             if args.command == "version":
-                result = client.version()
+                result = client.get_version()
             elif args.command == "guilds":
-                result = client.guilds()
+                result = client.get_guilds()
             elif args.command == "guild":
-                result = client.guild(args.guild_id)
+                result = client.get_guild(args.guild_id)
             elif args.command == "players":
-                result = client.players()
+                result = client.get_players()
             elif args.command == "player":
-                result = client.player(args.player_identifier)
+                result = client.get_player(args.player_identifier)
             elif args.command == "pals":
-                result = client.pals(args.player_identifier)
+                result = client.get_pals(args.player_identifier)
             elif args.command == "items":
-                result = client.items(args.player_identifier)
+                result = client.get_items(args.player_identifier)
             elif args.command == "techs":
-                result = client.techs(args.player_identifier)
+                result = client.get_techs(args.player_identifier)
             elif args.command == "progression":
-                result = client.progression(args.player_identifier)
+                result = client.get_progression(args.player_identifier)
             elif args.command == "give-items":
                 result = client.give_items(args.player_identifier, parse_items(args.payload))
             elif args.command == "give-pals":
@@ -260,6 +268,8 @@ def main() -> int:
                 result = client.learn_tech(args.player_identifier, technology_argument(args.technology))
             elif args.command == "forget-tech":
                 result = client.forget_tech(args.player_identifier, technology_argument(args.technology))
+            elif args.command == "delete-base":
+                result = client.delete_base(args.base_camp_identifier)
             else:
                 parser.error(f"Unsupported command: {args.command}")
                 return 2
