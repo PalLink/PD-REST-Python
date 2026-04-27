@@ -1,6 +1,6 @@
 # PalDefender REST API Endpoints
 
-This document mirrors the routes registered in `Reference/RESTAPI.cpp` and the request validation implemented in `Reference/RESTAPI/GET` and `Reference/RESTAPI/POST`.
+This document mirrors the routes registered in `Reference/RESTAPI.cpp` and the handler behavior implemented under `Reference/RESTAPI/GET` and `Reference/RESTAPI/POST`.
 
 ## Common Behavior
 
@@ -11,7 +11,7 @@ This document mirrors the routes registered in `Reference/RESTAPI.cpp` and the r
   - `OPTIONS` preflight is supported.
   - Requests from disallowed origins return `403`.
 - Startup guard: requests may return `403` with `Server has not been started up yet.`
-- Invalid JSON request bodies return `400` with a plain-text error string from the server.
+- Invalid JSON request bodies return `400` with a plain-text error string prefixed by `Error:`.
 
 ## GET Endpoints
 
@@ -49,9 +49,11 @@ Camp entries contain:
 - `world_pos`
 - `map_pos`
 
+The `members` array contains player UID strings.
+
 ### `GET /v1/pdapi/guild/{guild_id}`
 
-Returns one guild object, or the string `Guild '{guild_id}' not found.` when the guild is missing.
+Returns one guild object. If the guild is missing, the body is the JSON string `Guild '{guild_id}' not found.`.
 
 The guild payload contains:
 
@@ -78,9 +80,15 @@ Guild item storage includes:
 - `container_id`
 - `current`
 - `max`
-- indexed slot entries with `item_id` and `count`
+- numeric slot keys whose values may contain `item_id` and `count`
 
-### `GET /v1/pdapi/players`
+Guild member entries contain:
+
+- `player_uid`
+- `player_name`
+- `status`
+
+### `GET /v1/pdapi/items/players`
 
 Returns an array of players. Each player entry contains:
 
@@ -93,7 +101,7 @@ Returns an array of players. Each player entry contains:
 - `WorldLocation`
 - `MapLocation`
 
-### `GET /v1/pdapi/player/{player_identifier}`
+### `GET /v1/pdapi/items/player/{player_identifier}`
 
 Returns one player object. If the player is missing, the server returns:
 
@@ -102,7 +110,7 @@ Returns one player object. If the player is missing, the server returns:
 
 `player_identifier` may be either the PalDefender `UserId` or `PlayerUID`.
 
-### `GET /v1/pdapi/pals/{player_identifier}`
+### `GET /v1/pdapi/items/pals/{player_identifier}`
 
 Returns:
 
@@ -114,9 +122,19 @@ Returns:
 
 - `team_slot_index` on team pals
 - `page` and `slot` on palbox pals
-- `base_camp_slot_index` on base camp pals
 
-Missing player or player state returns `404` with a plain-text error string.
+`base_camps` is an array. Each entry contains:
+
+- `id`
+- `level`
+- `world_pos`
+- `map_pos`
+- `state`
+- `pals`
+
+Base-camp pal entries add `base_camp_slot_index`.
+
+Missing player returns `404` with `Player with UserId or PlayerUID '{player_identifier}' not found.`. Missing player state returns `404` with `PlayerState for UserId or PlayerUID '{player_identifier}' not found.`.
 
 ### `GET /v1/pdapi/items/{player_identifier}`
 
@@ -162,7 +180,48 @@ Returns structured progression data:
 - `captures`
 - `activities`
 
-It also preserves the older top-level compatibility fields:
+`playerProgression` contains:
+
+- `level`
+- `exp`
+- `unusedStatusPoints`
+
+`currencies` contains:
+
+- `lifmunks`
+- `technologyPoints`
+- `ancientTechnologyPoints`
+
+`bosses` contains:
+
+- `towerBossDefeatCounts`
+- `normalBossDefeatFlags`
+- `raidBossDefeatCounts`
+- `totalBossDefeatCount`
+- `predatorDefeatCount`
+
+`captures` contains:
+
+- `tribeCaptureCount`
+- `palCaptureCounts`
+- `palCaptureBonusCounts`
+- `palButcherCounts`
+
+`activities` contains:
+
+- `craftItemCounts`
+- `normalDungeonClearCount`
+- `fixedDungeonClearCount`
+- `oilrigClearCount`
+- `palRankUpCounts`
+- `arenaSoloClearCounts`
+- `npcTalkCounts`
+- `fishingCounts`
+- `foundTreasureCount`
+- `campConqueredCount`
+- `firstFishingComplete`
+
+The response also preserves older top-level compatibility fields:
 
 - `Level`
 - `EXP`
@@ -190,8 +249,7 @@ Rules:
 - `Items` must be an array.
 - Every item needs `ItemID` and `Count`.
 - `Count` must be a positive integer.
-- `ItemID` must be a valid PalDefender item id.
-- The request fails when the player inventory has fewer free slots than the number of requested array entries.
+- The request fails when validation or inventory insertion fails.
 
 Success response:
 
@@ -200,10 +258,12 @@ Success response:
   "Errors": 0,
   "Error": {},
   "Granted": {
-    "Items": 1
+    "Items": 100
   }
 }
 ```
+
+`Granted.Items` is the sum of granted item counts, not the number of array entries.
 
 ### `POST /v1/pdapi/give/pals/{player_identifier}`
 
@@ -222,7 +282,6 @@ Rules:
 - `Pals` must be an array.
 - Each entry needs `PalID` and `Level`.
 - `Level` must be a positive integer.
-- The pal id must be valid and PalDefender must be able to generate save parameters.
 - Free slots are checked across the player team and pal storage together.
 
 Success response returns `Granted.Pals`.
@@ -243,8 +302,7 @@ Rules:
 
 - `PalTemplates` must be an array of template file names.
 - Missing `.json` is added by the server automatically.
-- Each template must import successfully from PalDefender's pal template directory.
-- Free slots are checked across team and storage.
+- Free slots are checked across the player team and pal storage together.
 
 Success response returns `Granted.PalTemplates`.
 
@@ -268,7 +326,6 @@ Rules:
 - Every entry must contain exactly one of `PalID` or `PalTemplate`.
 - `Level` is optional and defaults to `1`.
 - If provided, `Level` must be a positive integer.
-- `EggID` must be a valid item id.
 - The player must have enough free normal inventory slots for the number of egg entries.
 
 Success response returns `Granted.PalEggs`.
@@ -290,7 +347,7 @@ Rules:
 
 - At least one of those fields must be present.
 - Each present value must be a positive integer.
-- `EXP` also depends on the player handle and internal exp function being available.
+- `EXP` also requires a player handle and internal exp function to be available.
 
 Success response returns:
 
@@ -330,6 +387,7 @@ Rules:
 - `Technology` is required.
 - It must be a string or an array of strings.
 - `All` is only valid when sent as a single string.
+- Array entries must all be strings.
 
 Success response returns:
 
@@ -345,6 +403,7 @@ Request body matches `learntech`.
 Special behavior:
 
 - `Technology: "All"` removes every unlocked technology.
+- When forgetting all, `Forgotten` is the string `"All"` instead of an array.
 
 Success response returns:
 
@@ -353,6 +412,34 @@ Success response returns:
 - `Forgotten`
 - `Skipped`
 
+### `POST /v1/pdapi/deletebase/{base_camp_identifier}`
+
+Request body is ignored and can be empty.
+
+`base_camp_identifier` must parse as a GUID.
+
+Possible outcomes:
+
+- `400` when the identifier is not a valid GUID
+- `404` when the base camp does not exist
+- `500` when the base-camp manager cannot be retrieved or destruction fails
+
+Success response includes:
+
+- `Errors`
+- `BaseCamp.Id`
+- `BaseCamp.Summary`
+- `Deleted.BaseCampPals`
+- `Deleted.StorageContainers`
+- `Deleted.ItemStacks`
+- `Deleted.ItemCount`
+- `Deleted.Buildings`
+- `Deleted.DropItems`
+- `Deleted.DefenseModels`
+- `Deleted.OtherMapObjects`
+- `Deleted.PalBox`
+- `Archive`
+
 ## Error Shapes
 
 The server uses multiple error formats depending on the endpoint:
@@ -360,6 +447,7 @@ The server uses multiple error formats depending on the endpoint:
 - Plain text:
   - `Unauthorized.`
   - `Player with UserId or PlayerUID '...' not found.`
+  - `PlayerState for UserId or PlayerUID '...' not found.`
   - `Server has not been started up yet.`
 - JSON:
 
@@ -372,7 +460,7 @@ The server uses multiple error formats depending on the endpoint:
 }
 ```
 
-or with detailed arrays / nested objects:
+Or with detailed arrays / nested objects:
 
 ```json
 {
