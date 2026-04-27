@@ -102,3 +102,7 @@ HTTP errors raise `PalDefenderApiError`. The exception exposes:
 ## Endpoint Reference
 
 Full endpoint documentation is in [docs/ENDPOINTS.md](docs/ENDPOINTS.md).
+
+## Usage Guide
+
+For a more detailed Python-focused guide with examples for typed GET responses, friendly POST helpers, constants, recipes, and error handling, see [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md).
