@@ -1,3 +1,8 @@
+[![PyPI version](https://img.shields.io/pypi/v/paldefender-rest-client)](https://pypi.org/project/paldefender-rest-client/)
+[![Python versions](https://img.shields.io/pypi/pyversions/paldefender-rest-client)](https://pypi.org/project/paldefender-rest-client/)
+[![License](https://img.shields.io/pypi/l/paldefender-rest-client)](https://github.com/PalLink/PD-REST-Python/blob/main/LICENSE)
+[![Discord](https://img.shields.io/discord/1399150174357422150?style=social&logo=discord&label=Discord)](https://discord.gg/ZfHEeGbxbk)
+
 # PalDefender-REST-Client (Python)
 
 Installable Python client for the PalDefender REST API. The package covers every route currently registered in the PalDefender reference implementation under `Reference/`.
@@ -5,7 +10,7 @@ Installable Python client for the PalDefender REST API. The package covers every
 ## Install
 
 ```bash
-pip install .
+pip install paldefender-rest-client
 ```
 
 ## Quick Start
@@ -28,16 +33,20 @@ Or:
 import PalDefender
 ```
 
-## Example Project
+## CLI
 
-A runnable example CLI is included in [examples/paldefender_cli](examples/paldefender_cli). It uses a local `.env` file for credentials and server settings, and covers every client endpoint.
+The package also installs a `paldefender-cli` command.
 
 ```bash
-pip install -e .[examples]
-python examples/paldefender_cli/main.py version
+paldefender-cli --env .env version
 ```
 
-Copy `examples/paldefender_cli/.env.example` to `examples/paldefender_cli/.env`, then fill in your settings before running the example.
+Set these variables in `.env` or in your shell environment:
+
+- `PALDEFENDER_BASE_URL`
+- `PALDEFENDER_BEARER_TOKEN`
+- `PALDEFENDER_DISPLAY_ADDRESS` (optional)
+- `PALDEFENDER_TIMEOUT` (optional)
 
 If `base_url` omits a port, the client defaults to `17993`.
 
@@ -101,8 +110,8 @@ HTTP errors raise `PalDefenderApiError`. The exception exposes:
 
 ## Endpoint Reference
 
-Full endpoint documentation is in [docs/ENDPOINTS.md](docs/ENDPOINTS.md).
+Full endpoint documentation is in [docs/ENDPOINTS.md](https://github.com/PalLink/PD-REST-Python/blob/main/docs/ENDPOINTS.md).
 
 ## Usage Guide
 
-For a more detailed Python-focused guide with examples for typed GET responses, friendly POST helpers, constants, recipes, and error handling, see [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md).
+For a more detailed Python-focused guide with examples for typed GET responses, friendly POST helpers, constants, recipes, and error handling, see [docs/USAGE_GUIDE.md](https://github.com/PalLink/PD-REST-Python/blob/main/docs/USAGE_GUIDE.md).

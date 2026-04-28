@@ -7,7 +7,16 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv as _load_dotenv
+except ModuleNotFoundError:
+    def _load_dotenv(dotenv_path: Path) -> None:
+        for raw_line in dotenv_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip())
 
 from PalDefender import (
     GiveItem,
@@ -22,7 +31,11 @@ from PalDefender import (
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Full example CLI for the PalDefender REST client.",
+        description="Command-line interface for the PalDefender REST client.",
+    )
+    parser.add_argument(
+        "--env",
+        help="Path to a .env file. Defaults to .env in the current working directory when present.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -109,18 +122,30 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def load_settings(env_path: Path) -> dict[str, Any]:
-    load_dotenv(env_path)
+def resolve_env_path(raw_env_path: str | None) -> Path | None:
+    if raw_env_path:
+        return Path(raw_env_path).expanduser().resolve()
+
+    default_env_path = Path.cwd() / ".env"
+    if default_env_path.is_file():
+        return default_env_path
+    return None
+
+
+def load_settings(env_path: Path | None) -> dict[str, Any]:
+    if env_path is not None:
+        _load_dotenv(env_path)
 
     base_url = os.getenv("PALDEFENDER_BASE_URL", "").strip()
     bearer_token = os.getenv("PALDEFENDER_BEARER_TOKEN", "").strip()
     display_address = os.getenv("PALDEFENDER_DISPLAY_ADDRESS", "").strip() or None
     timeout_raw = os.getenv("PALDEFENDER_TIMEOUT", "30").strip()
 
+    source = str(env_path) if env_path is not None else "environment variables"
     if not base_url:
-        raise ValueError(f"PALDEFENDER_BASE_URL is required in {env_path}")
+        raise ValueError(f"PALDEFENDER_BASE_URL is required in {source}")
     if not bearer_token:
-        raise ValueError(f"PALDEFENDER_BEARER_TOKEN is required in {env_path}")
+        raise ValueError(f"PALDEFENDER_BEARER_TOKEN is required in {source}")
 
     try:
         timeout = float(timeout_raw)
@@ -224,9 +249,7 @@ def print_json(data: Any) -> None:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
-
-    example_dir = Path(__file__).resolve().parent
-    env_path = example_dir / ".env"
+    env_path = resolve_env_path(args.env)
 
     try:
         settings = load_settings(env_path)
@@ -284,7 +307,3 @@ def main() -> int:
 
     print_json(result)
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

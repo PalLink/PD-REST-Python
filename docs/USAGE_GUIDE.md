@@ -14,7 +14,7 @@ pip install .
 For the example CLI:
 
 ```bash
-pip install -e .[examples]
+pip install -e .
 ```
 
 ## Creating a Client
@@ -398,7 +398,7 @@ except PalDefenderApiError as exc:
 
 ## Full Example CLI
 
-There is also a runnable CLI example in [examples/paldefender_cli](../examples/paldefender_cli).
+The package also installs a `paldefender-cli` command for terminal use.
 
 It is useful when you want to:
 

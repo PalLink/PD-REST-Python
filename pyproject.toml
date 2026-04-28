@@ -25,20 +25,21 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 dependencies = [
+  "python-dotenv>=1.0.1,<2",
   "requests>=2.31.0,<3"
 ]
 
-[project.optional-dependencies]
-examples = [
-  "python-dotenv>=1.0.1,<2"
-]
+[project.scripts]
+paldefender-cli = "paldefender_cli.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/"
-Documentation = "https://github.com/"
+Homepage = "https://pallink.net"
+Repository = "https://github.com/PalLink/PD-REST-Python"
+Documentation = "https://github.com/PalLink/PD-REST-Python/blob/main/docs/USAGE_GUIDE.md"
+Issues = "https://github.com/PalLink/PD-REST-Python/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/PalDefender"]
+packages = ["src/PalDefender", "src/paldefender_cli"]
 
 [tool.hatch.build.targets.sdist]
 include = [
